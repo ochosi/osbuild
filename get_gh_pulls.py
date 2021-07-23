@@ -40,11 +40,12 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--version", help="Set the `version` variable", default="31")
     parser.add_argument("--token", help="Supply a token for GitHub read access (optional)", default=None)
+    parser.add_argument("--owner", help="Set the owner/organisation of the GitHub repository (optional)", default="osbuild")
     args = parser.parse_args()
 
     repo = os.path.basename(os.getcwd())
 
-    api = GhApi(repo=repo, owner='osbuild', token=args.token)
+    api = GhApi(repo=repo, owner=args.owner, token=args.token)
 
     milestone = get_milestone(api, args.version)
 
