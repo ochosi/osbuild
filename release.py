@@ -53,8 +53,7 @@ def autoincrement_version():
     return version
 
 # Guess the git remote to push the release changes to
-def guess_remote():
-    repo = os.path.basename(os.getcwd())
+def guess_remote(repo):
     origin = f"github.com/osbuild/{repo}.git"
     remotes = run_command(['git','remote']).split("\n")
     if len(remotes) > 2:
@@ -68,13 +67,14 @@ def guess_remote():
             return remote
 
 # Execute all steps of the release playbook
-def release_playbook(version, remote):
+def release_playbook(version, remote, repo):
     step(f"Check out a new branch for the release {version}", ['git', 'checkout', '-b', f'release-{version}'])
     step("Generate template for new release", ['make', 'release'])
     step(f"Bump the version to {version}", ['make', 'bump-version'])
-    run_command(['git', 'diff'])
-    step(f"Add and commit the release-relevant changes (osbuild.spec NEWS.md setup.py)",
-          ['git', 'commit', 'osbuild.spec', 'NEWS.md', 'setup.py', '-s', f'-m {version}', f'-m "Release osbuild {version}"'])
+    step(f"Please make sure the version was bumped correctly to {version}", ['git', 'diff'])
+    # TODO: Call the pr_summaries.py script for osbuild or assemble the news from docs/news/unreleased for composer
+    step(f"Add and commit the release-relevant changes ({repo}.spec NEWS.md setup.py)",
+          ['git', 'commit', f'{repo}.spec', 'NEWS.md', 'setup.py', '-s', f'-m {version}', f'-m "Release osbuild {version}"'])
     step(f"Push all release changes to the remote '{remote}'",
           ['git', 'push', '--set-upstream', f'{remote}', f'release-{version}'])
     print("Please use github to submit a pull-request against the main repository!")
@@ -95,13 +95,14 @@ def main():
         version = args.version
     
     # Determine the remote to push the release to
+    repo = os.path.basename(os.getcwd())
     if (args.remote is None):
-        remote = guess_remote()
+        remote = guess_remote(repo)
     else:
         remote = args.remote
 
     # Run the release playbook
-    release_playbook(version, remote)
+    release_playbook(version, remote, repo)
 
 
 if __name__ == "__main__":
